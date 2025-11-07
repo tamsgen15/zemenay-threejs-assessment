@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zemenay - 3D PCB Visualization Platform</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      overflow: hidden;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1e 100%);
+    }
+
+    /* Header */
+    .header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 40px;
+      background: rgba(15, 15, 30, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 100;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      font-size: 28px;
+    }
+
+    .logo-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text p {
+      font-size: 12px;
+      color: #8b92b0;
+      margin-top: 2px;
+    }
+
+    .assessment-badge {
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    /* Control Panel */
+    #controls {
+      position: absolute;
+      top: 120px;
+      left: 40px;
+      width: 320px;
+      background: rgba(15, 15, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .control-header {
+      margin-bottom: 20px;
+    }
+
+    .control-header h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .control-header p {
+      font-size: 13px;
+      color: #8b92b0;
+      line-height: 1.5;
+    }
+
+    .control-section {
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #8b92b0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      flex: 1;
+      min-width: 140px;
+      padding: 12px 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    #loadModule {
+      width: 100%;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+    }
+
+    #loadModule:hover {
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5);
+    }
+
+    /* Status Display */
+    #status {
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      font-size: 13px;
+      color: #8b92b0;
+      line-height: 1.5;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    #status:empty {
+      display: none;
+    }
+
+    #status.success {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+
+    #status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    /* Info Panel */
+    .info-panel {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      width: 280px;
+      background: rgba(15, 15, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .info-item:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: #8b92b0;
+    }
+
+    .info-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .status-indicator {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      margin-right: 6px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        padding: 15px 20px;
+      }
+
+      #controls {
+        left: 20px;
+        right: 20px;
+        width: auto;
+        top: 100px;
+      }
+
+      .info-panel {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-content">
+      <div class="logo">
+        <span class="logo-icon">🔧</span>
+        <div class="logo-text">
+          <h1>Zemenay PCB Viewer</h1>
+          <p>Three.js 3D Visualization Platform</p>
+        </div>
+      </div>
+      <div class="assessment-badge">PR-668 & PR-311</div>
+    </div>
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <div id="controls">
+    <div class="control-header">
+      <h3>Component Controls</h3>
+      <p>Test rotation and module loading functionality</p>
+    </div>
+
+    <div class="control-section">
+      <div class="section-title">Rotation (PR-668)</div>
+      <div class="button-group">
+        <button id="rotateY">↻ Rotate Y</button>
+        <button id="rotateZ">↻ Rotate Z</button>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <div class="section-title">Module Loading (PR-311)</div>
+      <button id="loadModule">📦 Load Module</button>
+    </div>
+
+    <div id="status"></div>
+  </div>
+
+  <div class="info-panel">
+    <div class="info-item">
+      <span class="info-label">Status</span>
+      <span class="info-value"><span class="status-indicator"></span>Active</span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Renderer</span>
+      <span class="info-value">WebGL</span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Framework</span>
+      <span class="info-value">Three.js</span>
+    </div>
+    <div class="info-item">
+      <span class="info-label">Assessment</span>
+      <span class="info-value">IDEEZA</span>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
